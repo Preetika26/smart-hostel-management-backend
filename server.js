@@ -23,7 +23,7 @@ connectDB()
 
 // CORS configured for frontend with credentials support
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: "https://smart-hostel-management-frontend-mu.vercel.app",
   credentials: true
 }));
 
