@@ -3,6 +3,7 @@
 const Room = require("../models/Room");
 const User = require("../models/User");
 const { sendEmail } = require("../utils/emailService");
+const { buildEmailTemplate } = require("../utils/emailTemplate");
 
 
 //  Assign Room (Admin/Warden)
@@ -50,15 +51,16 @@ if (room.occupants.includes(studentId)) {
     // Send email to student
     if (student.email) {
       const subject = "Hostel Room Allocated";
-      const html = `
-        <h2>Room Allocation Successful</h2>
-        <p>Hello ${student.name},</p>
-        <p>A room has been allocated to you in the hostel.</p>
-        <p><strong>Room Number:</strong> ${room.roomNumber}</p>
-        <p><strong>Block:</strong> ${room.block} Hostel</p>
-        <p><strong>Room Type:</strong> ${room.type}</p>
-        <p>You can now check your dashboard for roommate details.</p>
-      `;
+      const html = buildEmailTemplate({
+        title: "Room Allocation Successful",
+        subtitle: `Hi ${student.name}, your hostel room has been assigned.`,
+        intro: "You can now view your room and roommate details in the dashboard.",
+        sections: [
+          { label: "Room Number", value: room.roomNumber },
+          { label: "Block", value: `${room.block} Hostel` },
+          { label: "Room Type", value: room.type },
+        ],
+      });
       try {
         await sendEmail(student.email, subject, html);
       } catch (emailError) {
@@ -108,12 +110,15 @@ exports.vacateRoom = async (req, res) => {
     // Send email to student
     if (student.email) {
       const subject = "Hostel Room Vacated";
-      const html = `
-        <h2>Room Vacated</h2>
-        <p>Hello ${student.name},</p>
-        <p>Your room (Room ${room.roomNumber}, ${room.block} Block) has been marked as vacated.</p>
-        <p>If this was not expected, please contact the hostel administration.</p>
-      `;
+      const html = buildEmailTemplate({
+        title: "Room Vacated",
+        subtitle: `Hi ${student.name}, your room status is now vacated.`,
+        intro: "If this update was not expected, contact hostel administration immediately.",
+        sections: [
+          { label: "Room Number", value: room.roomNumber },
+          { label: "Block", value: room.block },
+        ],
+      });
       try {
         await sendEmail(student.email, subject, html);
       } catch (emailError) {

@@ -2,6 +2,7 @@
 const Complaint = require("../models/Complaint");
 const User = require("../models/User");
 const { sendEmail } = require("../utils/emailService");
+const { buildEmailTemplate } = require("../utils/emailTemplate");
 
 exports.createComplaint = async (req, res) => {
   try {
@@ -21,13 +22,17 @@ exports.createComplaint = async (req, res) => {
     if (wardens.length > 0) {
       const wardenEmails = wardens.map(w => w.email).join(",");
       const subject = `New Complaint from ${student.name}`;
-      const html = `
-        <h2>New Complaint Registered</h2>
-        <p><strong>Student Name:</strong> ${student.name}</p>
-        <p><strong>Type:</strong> ${complaint.type}</p>
-        <p><strong>Description:</strong> ${complaint.description}</p>
-        <p><strong>Date:</strong> ${complaint.createdAt}</p>
-      `;
+      const html = buildEmailTemplate({
+        title: "New Complaint Registered",
+        subtitle: "Warden action may be required.",
+        intro: "A student from your hostel has submitted a new complaint.",
+        sections: [
+          { label: "Student Name", value: student.name },
+          { label: "Type", value: complaint.type },
+          { label: "Description", value: complaint.description },
+          { label: "Date", value: new Date(complaint.createdAt).toLocaleString() },
+        ],
+      });
       
       try {
         await sendEmail(wardenEmails, subject, html);
@@ -75,13 +80,17 @@ exports.updateStatus = async (req, res) => {
     // Send email to student
     if (updated.student && updated.student.email) {
       const subject = `Complaint Status Updated: ${updated.status}`;
-      const html = `
-        <h2>Your Complaint Status has been Updated</h2>
-        <p><strong>Complaint Type:</strong> ${updated.type}</p>
-        <p><strong>New Status:</strong> <span style="color: ${updated.status === 'Resolved' ? 'green' : 'orange'}">${updated.status}</span></p>
-        <p><strong>Assigned To:</strong> ${updated.assignedTo || "Not yet assigned"}</p>
-        <p>Thank you for your patience.</p>
-      `;
+      const html = buildEmailTemplate({
+        title: "Complaint Status Updated",
+        subtitle: `Current status: ${updated.status}`,
+        intro: "There is an update on your complaint request.",
+        sections: [
+          { label: "Complaint Type", value: updated.type },
+          { label: "New Status", value: updated.status },
+          { label: "Assigned To", value: updated.assignedTo || "Not yet assigned" },
+        ],
+        footerNote: "Thank you for your patience. Contact hostel administration for urgent issues.",
+      });
 
       try {
         await sendEmail(updated.student.email, subject, html);
@@ -94,4 +103,4 @@ exports.updateStatus = async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
-};
+};

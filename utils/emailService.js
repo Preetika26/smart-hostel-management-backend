@@ -1,12 +1,10 @@
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+} else {
+  console.warn("SendGrid not configured: missing SENDGRID_API_KEY");
+}
 
 /**
  * Send an email
@@ -16,16 +14,33 @@ const transporter = nodemailer.createTransport({
  */
 const sendEmail = async (to, subject, html) => {
   try {
+    if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_SENDER_EMAIL) {
+      throw new Error(
+        "Email service not configured. Add SENDGRID_API_KEY and SENDGRID_SENDER_EMAIL."
+      );
+    }
+
+    const recipients = Array.isArray(to)
+      ? to.filter(Boolean)
+      : String(to || "")
+          .split(",")
+          .map((email) => email.trim())
+          .filter(Boolean);
+
+    if (recipients.length === 0) {
+      return null;
+    }
+
     const mailOptions = {
-      from: `"Smart Hostel Management" <${process.env.EMAIL_USER}>`,
-      to,
+      to: recipients,
+      from: process.env.SENDGRID_SENDER_EMAIL,
       subject,
       html,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent: %s", info.messageId);
-    return info;
+    const [response] = await sgMail.send(mailOptions, false);
+    console.log("Email sent via SendGrid:", response.statusCode);
+    return response;
   } catch (error) {
     console.error("Error sending email:", error);
     throw error;

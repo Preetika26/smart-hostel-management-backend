@@ -3,6 +3,7 @@ const RoomChangeRequest = require("../models/RoomChangeRequest");
 const User = require("../models/User");
 const Room = require("../models/Room");
 const { sendEmail } = require("../utils/emailService");
+const { buildEmailTemplate } = require("../utils/emailTemplate");
 
 exports.requestRoomChange = async (req, res) => {
   try {
@@ -27,13 +28,17 @@ exports.requestRoomChange = async (req, res) => {
     if (wardens.length > 0) {
       const wardenEmails = wardens.map(w => w.email).join(",");
       const subject = `New Room Change Request: ${user.name}`;
-      const html = `
-        <h2>New Room Change Request</h2>
-        <p><strong>Student Name:</strong> ${user.name}</p>
-        <p><strong>Current Room:</strong> ${user.room.roomNumber} (${user.room.block})</p>
-        <p><strong>Requested Type:</strong> ${requestedRoomType}</p>
-        <p><strong>Reason:</strong> ${reason}</p>
-      `;
+      const html = buildEmailTemplate({
+        title: "New Room Change Request",
+        subtitle: "A student has requested room reassignment.",
+        intro: "Please review the request details and take action in the portal.",
+        sections: [
+          { label: "Student Name", value: user.name },
+          { label: "Current Room", value: `${user.room.roomNumber} (${user.room.block})` },
+          { label: "Requested Type", value: requestedRoomType },
+          { label: "Reason", value: reason },
+        ],
+      });
       try {
         await sendEmail(wardenEmails, subject, html);
       } catch (emailError) {
@@ -115,25 +120,27 @@ exports.updateRequestStatus = async (req, res) => {
     // Send email to student
     if (request.student && request.student.email) {
       const subject = `Room Change Request ${status}`;
-      let html = "";
-      
-      if (status === "Approved") {
-        html = `
-          <h2>Room Change Request Approved!</h2>
-          <p>Hello ${request.student.name},</p>
-          <p>Your request for a room change has been approved.</p>
-          <p><strong>New Room:</strong> ${request.newRoom ? request.newRoom.roomNumber : "Assigned"}</p>
-          <p>Please move your belongings to the new room by the end of the day.</p>
-        `;
-      } else {
-        html = `
-          <h2>Room Change Request Update</h2>
-          <p>Hello ${request.student.name},</p>
-          <p>Your request for a room change has been <strong>Rejected</strong>.</p>
-          <p><strong>Reason:</strong> ${rejectionReason || "Not specified"}</p>
-          <p>If you have any questions, please contact the warden.</p>
-        `;
-      }
+      const html =
+        status === "Approved"
+          ? buildEmailTemplate({
+              title: "Room Change Request Approved",
+              subtitle: `Hi ${request.student.name}, your request has been approved.`,
+              intro: "Please shift your belongings to the newly assigned room by end of day.",
+              sections: [
+                { label: "Status", value: "Approved" },
+                { label: "New Room", value: request.newRoom ? request.newRoom.roomNumber : "Assigned" },
+              ],
+            })
+          : buildEmailTemplate({
+              title: "Room Change Request Update",
+              subtitle: `Hi ${request.student.name}, your request was not approved.`,
+              intro: "You can raise a new request with additional details if needed.",
+              sections: [
+                { label: "Status", value: "Rejected" },
+                { label: "Reason", value: rejectionReason || "Not specified" },
+              ],
+              footerNote: "If you need help, please contact your hostel warden.",
+            });
 
       try {
         await sendEmail(request.student.email, subject, html);

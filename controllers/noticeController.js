@@ -2,6 +2,8 @@
 const Notice = require("../models/Notice");
 const User = require("../models/User");
 const { sendEmail } = require("../utils/emailService");
+const { uploadBufferToImageKit } = require("../utils/uploadService");
+const { buildEmailTemplate } = require("../utils/emailTemplate");
 
 exports.uploadNotice = async (req, res) => {
   try {
@@ -9,7 +11,11 @@ exports.uploadNotice = async (req, res) => {
     let fileUrl = null;
 
     if (req.file) {
-      fileUrl = `/uploads/${req.file.filename}`;
+      const uploadResult = await uploadBufferToImageKit({
+        file: req.file,
+        folder: "/smart-hostel/notices",
+      });
+      fileUrl = uploadResult?.url || null;
     }
 
     const newNotice = new Notice({
@@ -29,14 +35,19 @@ exports.uploadNotice = async (req, res) => {
 
       if (userEmails) {
         const subject = `Important Notice: ${title}`;
-        const html = `
-          <h2>New Notice Posted</h2>
-          <p><strong>Title:</strong> ${title}</p>
-          <p><strong>Category:</strong> ${type || "General"}</p>
-          <p><strong>Description:</strong> ${description}</p>
-          <p>${fileUrl ? `<a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}${fileUrl}">View Attachment</a>` : ""}</p>
-          <p>Please check the portal for more details.</p>
-        `;
+        const html = buildEmailTemplate({
+          title: "New Notice Posted",
+          subtitle: "Please review the latest update.",
+          intro: "A new notice has been published in the hostel portal.",
+          sections: [
+            { label: "Title", value: title },
+            { label: "Category", value: type || "General" },
+            { label: "Description", value: description || "No description provided" },
+          ],
+          actionText: fileUrl ? "View Attachment" : undefined,
+          actionUrl: fileUrl || undefined,
+          footerNote: "Please log in to the portal for full details and follow-up actions.",
+        });
         await sendEmail(userEmails, subject, html);
       }
     } catch (emailError) {

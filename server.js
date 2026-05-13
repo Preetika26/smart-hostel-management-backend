@@ -1,4 +1,5 @@
 // server.js
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db")
@@ -16,22 +17,28 @@ const disciplineRoutes = require("./routes/disciplineRoutes");
 const roomChangeRoutes = require("./routes/roomChangeRoutes");
 
 const app = express();
-require("dotenv").config();
 
 const cookieParser = require("cookie-parser");
-connectDB()
+connectDB();
+
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 // CORS configured for frontend with credentials support
 app.use(cors({
+<<<<<<< Updated upstream
   origin: "https://smart-hostel-management-frontend-mu.vercel.app",
+=======
+  origin: allowedOrigins,
+>>>>>>> Stashed changes
   credentials: true
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}))
 app.use(cookieParser());
-app.use("/uploads", express.static("uploads"));
-
 app.use("/api/auth", authRoutes);
 app.use("/api/users",userRoutes);
 app.use("/api/rooms",roomRoutes);
@@ -45,4 +52,9 @@ app.use("/api/notices", noticeRoutes);
 app.use("/api/discipline", disciplineRoutes);
 app.use("/api/room-change", roomChangeRoutes);
 
+<<<<<<< Updated upstream
 app.listen(process.env.PORT, () => console.log(`Server is running on port ${process.env.PORT}`));
+=======
+const port = process.env.PORT || 5000;
+app.listen(port, () => console.log(`Server is running on port ${port}`));
+>>>>>>> Stashed changes

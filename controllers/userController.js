@@ -2,6 +2,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { uploadBufferToImageKit } = require("../utils/uploadService");
 
 
 //  Generate JWT Token
@@ -19,7 +20,15 @@ const generateToken = (user) => {
 exports.createUser = async (req, res) => {
   try {
     const { name, email, password, gender, address, fatherName, mobileNumber, alternateMobileNumber } = req.body;
-    const idProof = req.file ? req.file.path : null;
+    let idProof = null;
+
+    if (req.file) {
+      const uploadResult = await uploadBufferToImageKit({
+        file: req.file,
+        folder: "/smart-hostel/id-proof/students",
+      });
+      idProof = uploadResult?.url || null;
+    }
 
     // validation
     if (!name || !email || !password || !gender) {
@@ -69,7 +78,15 @@ exports.createUser = async (req, res) => {
 exports.createWarden = async (req, res) => {
   try {
     const { name, email, password, gender, address, mobileNumber } = req.body;
-    const idProof = req.file ? req.file.path : null;
+    let idProof = null;
+
+    if (req.file) {
+      const uploadResult = await uploadBufferToImageKit({
+        file: req.file,
+        folder: "/smart-hostel/id-proof/wardens",
+      });
+      idProof = uploadResult?.url || null;
+    }
 
     if (!name || !email || !password || !gender) {
       return res.status(400).json({ status: 400, success: false, message: "Please provide all fields" });
@@ -232,7 +249,15 @@ exports.getUserById = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { name, email, gender, address, fatherName, mobileNumber, alternateMobileNumber, password } = req.body;
-    const idProof = req.file ? req.file.path : null;
+    let idProof = null;
+
+    if (req.file) {
+      const uploadResult = await uploadBufferToImageKit({
+        file: req.file,
+        folder: "/smart-hostel/id-proof/users",
+      });
+      idProof = uploadResult?.url || null;
+    }
 
     const user = await User.findById(req.params.id);
     if (!user) {
