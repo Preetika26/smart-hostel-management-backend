@@ -28,11 +28,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
 
 // CORS configured for frontend with credentials support
 app.use(cors({
-<<<<<<< Updated upstream
   origin: "https://smart-hostel-management-frontend-mu.vercel.app",
-=======
-  origin: allowedOrigins,
->>>>>>> Stashed changes
   credentials: true
 }));
 
@@ -52,9 +48,4 @@ app.use("/api/notices", noticeRoutes);
 app.use("/api/discipline", disciplineRoutes);
 app.use("/api/room-change", roomChangeRoutes);
 
-<<<<<<< Updated upstream
 app.listen(process.env.PORT, () => console.log(`Server is running on port ${process.env.PORT}`));
-=======
-const port = process.env.PORT || 5000;
-app.listen(port, () => console.log(`Server is running on port ${port}`));
->>>>>>> Stashed changes
